@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Website Time Tracker</title>
+  <style>
+    body {
+      width: 320px;
+      padding: 15px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 15px 0;
+      color: #333;
+    }
+
+    .user-section {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-section.logged-out {
+      justify-content: center;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .user-handle {
+      font-size: 12px;
+      color: #666;
+    }
+
+    button {
+      padding: 10px 15px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    button.x-login {
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button.x-login:hover {
+      background: #333;
+    }
+
+    button.x-logout {
+      background: #666;
+      font-size: 12px;
+      padding: 6px 12px;
+      width: auto;
+    }
+
+    button.x-logout:hover {
+      background: #555;
+    }
+
+    button.view-stats {
+      background: #2196F3;
+      margin-top: 10px;
+    }
+
+    button.view-stats:hover {
+      background: #1976D2;
+    }
+
+    button.view-stats:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .x-icon {
+      width: 16px;
+      height: 16px;
+    }
+
+    .login-prompt {
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Website Time Tracker</h1>
+
+  <div id="userSection" class="user-section logged-out">
+    <button id="xLoginBtn" class="x-login">
+      <svg class="x-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+      Login with X
+    </button>
+  </div>
+
+  <button id="viewStats" class="view-stats" disabled>View Stats</button>
+  <div id="loginPrompt" class="login-prompt">Login to view your browsing stats</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

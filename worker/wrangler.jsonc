@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
+  "name": "website-time-tracker-x-auth",
+  "compatibility_date": "2025-01-01",
+  "main": "worker.ts",
+  "assets": { "directory": "./public" },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "USER_STATS",
+        "class_name": "UserStats"
+      },
+      {
+        "name": "ADMIN_STATS",
+        "class_name": "AdminStats"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["UserStats"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["AdminStats"]
+    }
+  ],
+  "routes": [{ "custom_domain": true, "pattern": "history.wilmake.com" }]
+}
