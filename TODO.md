@@ -13,5 +13,6 @@ promo code: FRIENDS100 for 100% discount
 TODO:
 
 - ✅ add needed mcp auth endpoints
-- mcp ui with results. evidence tool with ui
-- improved search
+- ✅ browser history: less items
+- ✅ improve search: do additional query per word + allow case insensitivity
+- mcp ui with results; evidence tool with ui

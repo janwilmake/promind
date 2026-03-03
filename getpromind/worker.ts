@@ -1876,103 +1876,153 @@ export class UserDO extends DurableObject<Env> {
     duration: number;
     timestamp: number;
   }) {
-    this.sql.exec(
-      "INSERT INTO history (url, title, description, duration, timestamp) VALUES (?, ?, ?, ?, ?)",
-      data.url,
-      data.title,
-      data.description,
-      data.duration,
-      data.timestamp
-    );
+    // Deduplicate: if the same URL was already visited today, add duration to existing row
+    const dayStart = new Date(data.timestamp);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const dayEnd = dayStart.getTime() + 24 * 60 * 60 * 1000;
+
+    const existing = this.sql
+      .exec(
+        "SELECT id, duration FROM history WHERE url = ? AND timestamp >= ? AND timestamp < ? LIMIT 1",
+        data.url,
+        dayStart.getTime(),
+        dayEnd
+      )
+      .toArray();
+
+    if (existing.length > 0) {
+      this.sql.exec(
+        "UPDATE history SET duration = duration + ?, title = ?, description = ?, timestamp = ? WHERE id = ?",
+        data.duration,
+        data.title,
+        data.description,
+        data.timestamp,
+        existing[0].id
+      );
+    } else {
+      this.sql.exec(
+        "INSERT INTO history (url, title, description, duration, timestamp) VALUES (?, ?, ?, ?, ?)",
+        data.url,
+        data.title,
+        data.description,
+        data.duration,
+        data.timestamp
+      );
+    }
   }
 
   // ── Search across all sources ──
 
   async search(query: string, from: string, source: string): Promise<any[]> {
     const results: any[] = [];
-    const likeQuery = `%${query}%`;
     const fromTs = from ? new Date(from).getTime() : 0;
 
+    // Split query into individual words for broader matching
+    const words = query
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
+    const queries = [query, ...words.filter((w) => w !== query)];
+    const seen = new Set<string>();
+
     if (source === "all" || source === "history") {
-      const historyRows = this.sql
-        .exec(
-          `SELECT url, title, description, duration, timestamp FROM history
-         WHERE (title LIKE ? OR url LIKE ? OR description LIKE ?) AND timestamp >= ?
-         ORDER BY timestamp DESC LIMIT 50`,
-          likeQuery,
-          likeQuery,
-          likeQuery,
-          fromTs
-        )
-        .toArray();
+      for (const q of queries) {
+        const likeQuery = `%${q}%`;
+        const historyRows = this.sql
+          .exec(
+            `SELECT url, title, description, duration, timestamp FROM history
+           WHERE (title LIKE ? COLLATE NOCASE OR url LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE) AND timestamp >= ?
+           ORDER BY timestamp DESC LIMIT 50`,
+            likeQuery,
+            likeQuery,
+            likeQuery,
+            fromTs
+          )
+          .toArray();
 
-      for (const row of historyRows) {
-        results.push({
-          source: "history",
-          url: row.url,
-          title: row.title || row.url,
-          meta: `${Math.floor((row.duration as number) / 60)}m ${(row.duration as number) % 60}s — ${new Date(row.timestamp as number).toLocaleString()}`,
-          timestamp: row.timestamp,
-          duration: row.duration,
-          description: row.description
-        });
-      }
-    }
-
-    if (source === "all" || source === "bookmarks") {
-      const bookmarkRows = this.sql
-        .exec(
-          `SELECT id, text, created_at, author_username FROM bookmarks
-         WHERE text LIKE ?
-         ORDER BY created_at DESC LIMIT 50`,
-          likeQuery
-        )
-        .toArray();
-
-      for (const row of bookmarkRows) {
-        const createdAt = row.created_at
-          ? new Date(row.created_at as string).getTime()
-          : 0;
-        if (createdAt >= fromTs) {
+        for (const row of historyRows) {
+          const key = `history:${row.url}:${row.timestamp}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
           results.push({
-            source: "bookmarks",
-            url: `https://x.com/i/status/${row.id}`,
-            title: ((row.text as string) || "").slice(0, 120),
-            meta: `@${row.author_username || "unknown"} — ${row.created_at}`,
-            timestamp: createdAt,
-            text: row.text
+            source: "history",
+            url: row.url,
+            title: row.title || row.url,
+            meta: `${Math.floor((row.duration as number) / 60)}m ${(row.duration as number) % 60}s — ${new Date(row.timestamp as number).toLocaleString()}`,
+            timestamp: row.timestamp,
+            duration: row.duration,
+            description: row.description
           });
         }
       }
     }
 
-    if (source === "all" || source === "repos") {
-      const repoRows = this.sql
-        .exec(
-          `SELECT full_name, description, homepage, stargazers_count, language, topics, pushed_at FROM repos
-         WHERE (full_name LIKE ? OR description LIKE ? OR topics LIKE ?)
-         ORDER BY pushed_at DESC LIMIT 50`,
-          likeQuery,
-          likeQuery,
-          likeQuery
-        )
-        .toArray();
+    if (source === "all" || source === "bookmarks") {
+      for (const q of queries) {
+        const likeQuery = `%${q}%`;
+        const bookmarkRows = this.sql
+          .exec(
+            `SELECT id, text, created_at, author_username FROM bookmarks
+           WHERE text LIKE ? COLLATE NOCASE
+           ORDER BY created_at DESC LIMIT 50`,
+            likeQuery
+          )
+          .toArray();
 
-      for (const row of repoRows) {
-        const pushedAt = row.pushed_at
-          ? new Date(row.pushed_at as string).getTime()
-          : 0;
-        if (pushedAt >= fromTs) {
-          results.push({
-            source: "repos",
-            url: `https://github.com/${row.full_name}`,
-            title: row.full_name,
-            name: row.full_name,
-            meta: `⭐ ${row.stargazers_count} — ${row.language || ""} — ${row.description || ""}`,
-            timestamp: pushedAt,
-            description: row.description,
-            stars: row.stargazers_count
-          });
+        for (const row of bookmarkRows) {
+          const createdAt = row.created_at
+            ? new Date(row.created_at as string).getTime()
+            : 0;
+          if (createdAt >= fromTs) {
+            const key = `bookmarks:${row.id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            results.push({
+              source: "bookmarks",
+              url: `https://x.com/i/status/${row.id}`,
+              title: ((row.text as string) || "").slice(0, 120),
+              meta: `@${row.author_username || "unknown"} — ${row.created_at}`,
+              timestamp: createdAt,
+              text: row.text
+            });
+          }
+        }
+      }
+    }
+
+    if (source === "all" || source === "repos") {
+      for (const q of queries) {
+        const likeQuery = `%${q}%`;
+        const repoRows = this.sql
+          .exec(
+            `SELECT full_name, description, homepage, stargazers_count, language, topics, pushed_at FROM repos
+           WHERE (full_name LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE OR topics LIKE ? COLLATE NOCASE)
+           ORDER BY pushed_at DESC LIMIT 50`,
+            likeQuery,
+            likeQuery,
+            likeQuery
+          )
+          .toArray();
+
+        for (const row of repoRows) {
+          const pushedAt = row.pushed_at
+            ? new Date(row.pushed_at as string).getTime()
+            : 0;
+          if (pushedAt >= fromTs) {
+            const key = `repos:${row.full_name}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            results.push({
+              source: "repos",
+              url: `https://github.com/${row.full_name}`,
+              title: row.full_name,
+              name: row.full_name,
+              meta: `⭐ ${row.stargazers_count} — ${row.language || ""} — ${row.description || ""}`,
+              timestamp: pushedAt,
+              description: row.description,
+              stars: row.stargazers_count
+            });
+          }
         }
       }
     }
