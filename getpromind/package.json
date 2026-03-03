@@ -1,0 +1,16 @@
+{
+  "name": "promind",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260127.0",
+    "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "stripe": "^20.1.0"
+  }
+}

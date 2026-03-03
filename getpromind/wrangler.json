@@ -1,11 +1,19 @@
 {
   "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
-  "name": "getpromind",
-  "account_id": "080fd9e0587416d2fa30ed1f527e2323",
+  "name": "promind",
+  "main": "worker.ts",
   "compatibility_date": "2026-01-24",
-  "assets": { "directory": "./" },
+  "account_id": "080fd9e0587416d2fa30ed1f527e2323",
+  "assets": { "directory": "./public" },
   "routes": [
     { "custom_domain": true, "pattern": "getpromind.com" },
     { "custom_domain": true, "pattern": "www.getpromind.com" }
-  ]
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "USER_DO", "class_name": "UserDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["UserDO"] }],
+  "triggers": {
+    "crons": ["0 */1 * * *"]
+  }
 }

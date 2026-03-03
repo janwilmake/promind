@@ -1,6 +1,4 @@
-First, turn `worker.ts` into multiple files
-
-Then make `getpromind` backend:
+make `getpromind` backend:
 
 - login with X first. ensure to also have access to bookmarks. This is immediately the first onboarding step
 - create dashboard with onboarding flow in a single page that shows a checkmark for every step taken. steps:
@@ -11,3 +9,9 @@ Then make `getpromind` backend:
   - subscribe: create stripe subscription of $30/month: prod_U5456bnQ86hgT4. Create a subscription when clicking "Order now with free trial". 7 days free trial.
 
 promo code: FRIENDS100 for 100% discount
+
+TODO:
+
+- ✅ add needed mcp auth endpoints
+- mcp ui with results. evidence tool with ui
+- improved search
