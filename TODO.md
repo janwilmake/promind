@@ -15,4 +15,5 @@ TODO:
 - ✅ add needed mcp auth endpoints
 - ✅ browser history: less items
 - ✅ improve search: do additional query per word + allow case insensitivity
-- mcp ui with results; evidence tool with ui
+- ❌ mcp ui with results; evidence tool with ui (ai can't figure it out)
+- try again with https://github.com/janwilmake/mcp-ui-app-without-libs

@@ -186,11 +186,11 @@ function mcpToolsList() {
   return [
     {
       name: "search",
-      description: `Search across browser history, X bookmarks, and GitHub repos. Returns matching items from all sources. Today is ${today}.`,
+      description: `Search across browser history, X bookmarks, and GitHub repos. Returns matching items from all sources. If no query is provided, returns recent items. Today is ${today}.`,
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Search query" },
+          query: { type: "string", description: "Search query (optional — omit to get recent items)" },
           from: {
             type: "string",
             description: "ISO date string to search from (optional)"
@@ -201,7 +201,7 @@ function mcpToolsList() {
             description: "Filter by source (default: all)"
           }
         },
-        required: ["query"]
+        required: []
       }
     },
     {
@@ -1916,26 +1916,53 @@ export class UserDO extends DurableObject<Env> {
   async search(query: string, from: string, source: string): Promise<any[]> {
     const results: any[] = [];
     const fromTs = from ? new Date(from).getTime() : 0;
+    const trimmed = (query || "").trim();
+    const hasQuery = trimmed.length > 0;
 
     // Split query into individual words for broader matching
-    const words = query
-      .trim()
+    const words = trimmed
       .split(/\s+/)
       .filter((w) => w.length > 0);
-    const queries = [query, ...words.filter((w) => w !== query)];
+    const queries = hasQuery ? [trimmed, ...words.filter((w) => w !== trimmed)] : [];
     const seen = new Set<string>();
 
     if (source === "all" || source === "history") {
-      for (const q of queries) {
-        const likeQuery = `%${q}%`;
+      if (hasQuery) {
+        for (const q of queries) {
+          const likeQuery = `%${q}%`;
+          const historyRows = this.sql
+            .exec(
+              `SELECT url, title, description, duration, timestamp FROM history
+             WHERE (title LIKE ? COLLATE NOCASE OR url LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE) AND timestamp >= ?
+             ORDER BY timestamp DESC LIMIT 50`,
+              likeQuery,
+              likeQuery,
+              likeQuery,
+              fromTs
+            )
+            .toArray();
+
+          for (const row of historyRows) {
+            const key = `history:${row.url}:${row.timestamp}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            results.push({
+              source: "history",
+              url: row.url,
+              title: row.title || row.url,
+              meta: `${Math.floor((row.duration as number) / 60)}m ${(row.duration as number) % 60}s — ${new Date(row.timestamp as number).toLocaleString()}`,
+              timestamp: row.timestamp,
+              duration: row.duration,
+              description: row.description
+            });
+          }
+        }
+      } else {
         const historyRows = this.sql
           .exec(
             `SELECT url, title, description, duration, timestamp FROM history
-           WHERE (title LIKE ? COLLATE NOCASE OR url LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE) AND timestamp >= ?
+           WHERE timestamp >= ?
            ORDER BY timestamp DESC LIMIT 50`,
-            likeQuery,
-            likeQuery,
-            likeQuery,
             fromTs
           )
           .toArray();
@@ -1958,14 +1985,42 @@ export class UserDO extends DurableObject<Env> {
     }
 
     if (source === "all" || source === "bookmarks") {
-      for (const q of queries) {
-        const likeQuery = `%${q}%`;
+      if (hasQuery) {
+        for (const q of queries) {
+          const likeQuery = `%${q}%`;
+          const bookmarkRows = this.sql
+            .exec(
+              `SELECT id, text, created_at, author_username FROM bookmarks
+             WHERE text LIKE ? COLLATE NOCASE
+             ORDER BY created_at DESC LIMIT 50`,
+              likeQuery
+            )
+            .toArray();
+
+          for (const row of bookmarkRows) {
+            const createdAt = row.created_at
+              ? new Date(row.created_at as string).getTime()
+              : 0;
+            if (createdAt >= fromTs) {
+              const key = `bookmarks:${row.id}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              results.push({
+                source: "bookmarks",
+                url: `https://x.com/i/status/${row.id}`,
+                title: ((row.text as string) || "").slice(0, 120),
+                meta: `@${row.author_username || "unknown"} — ${row.created_at}`,
+                timestamp: createdAt,
+                text: row.text
+              });
+            }
+          }
+        }
+      } else {
         const bookmarkRows = this.sql
           .exec(
             `SELECT id, text, created_at, author_username FROM bookmarks
-           WHERE text LIKE ? COLLATE NOCASE
-           ORDER BY created_at DESC LIMIT 50`,
-            likeQuery
+           ORDER BY created_at DESC LIMIT 50`
           )
           .toArray();
 
@@ -1991,16 +2046,46 @@ export class UserDO extends DurableObject<Env> {
     }
 
     if (source === "all" || source === "repos") {
-      for (const q of queries) {
-        const likeQuery = `%${q}%`;
+      if (hasQuery) {
+        for (const q of queries) {
+          const likeQuery = `%${q}%`;
+          const repoRows = this.sql
+            .exec(
+              `SELECT full_name, description, homepage, stargazers_count, language, topics, pushed_at FROM repos
+             WHERE (full_name LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE OR topics LIKE ? COLLATE NOCASE)
+             ORDER BY pushed_at DESC LIMIT 50`,
+              likeQuery,
+              likeQuery,
+              likeQuery
+            )
+            .toArray();
+
+          for (const row of repoRows) {
+            const pushedAt = row.pushed_at
+              ? new Date(row.pushed_at as string).getTime()
+              : 0;
+            if (pushedAt >= fromTs) {
+              const key = `repos:${row.full_name}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              results.push({
+                source: "repos",
+                url: `https://github.com/${row.full_name}`,
+                title: row.full_name,
+                name: row.full_name,
+                meta: `⭐ ${row.stargazers_count} — ${row.language || ""} — ${row.description || ""}`,
+                timestamp: pushedAt,
+                description: row.description,
+                stars: row.stargazers_count
+              });
+            }
+          }
+        }
+      } else {
         const repoRows = this.sql
           .exec(
             `SELECT full_name, description, homepage, stargazers_count, language, topics, pushed_at FROM repos
-           WHERE (full_name LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE OR topics LIKE ? COLLATE NOCASE)
-           ORDER BY pushed_at DESC LIMIT 50`,
-            likeQuery,
-            likeQuery,
-            likeQuery
+           ORDER BY pushed_at DESC LIMIT 50`
           )
           .toArray();
 
