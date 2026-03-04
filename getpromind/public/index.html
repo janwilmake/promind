@@ -18,6 +18,11 @@
   <meta name="twitter:title" content="Pro Mind — Your AI with Perfect Memory">
   <meta name="twitter:description" content="Chrome. X. GitHub. The web. All recalled instantly — just ask.">
   <meta name="twitter:image" content="https://getpromind.com/logo.png">
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; background: #fff; color: #000; -webkit-font-smoothing: antialiased; }
@@ -27,16 +32,19 @@
 </head>
 <body>
   <nav style="position:fixed;top:0;width:100%;padding:16px 40px;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);z-index:100;border-bottom:1px solid rgba(0,0,0,0.06);">
-    <div style="font-size:20px;font-weight:600;letter-spacing:-0.5px;">🧠 Pro Mind</div>
-    <a href="/dashboard" style="padding:8px 20px;background:#000;color:#fff;border-radius:980px;font-size:14px;font-weight:500;text-decoration:none;">Get Started</a>
+    <div style="font-size:20px;font-weight:600;letter-spacing:-0.5px;display:flex;align-items:center;gap:8px;"><img src="/favicon-96x96.png" alt="Pro Mind" style="width:24px;height:24px;">Pro Mind</div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <a href="https://github.com/janwilmake/promind" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:#000;font-size:13px;font-weight:500;padding:6px 12px;border-radius:980px;border:1px solid rgba(0,0,0,0.15);"><svg height="16" width="16" viewBox="0 0 16 16" fill="#24292f"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><img alt="GitHub stars" src="https://img.shields.io/github/stars/janwilmake/promind?style=flat&label=stars&color=000&labelColor=fff" style="height:20px;"></a>
+      <a href="/dashboard" style="padding:8px 20px;background:#000;color:#fff;border-radius:980px;font-size:14px;font-weight:500;text-decoration:none;">Get Started</a>
+    </div>
   </nav>
 
   <section style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:120px 24px 80px;">
     <div style="max-width:1200px;width:100%;display:flex;align-items:center;gap:60px;flex-wrap:wrap;justify-content:center;">
       <div style="flex:1;min-width:320px;max-width:520px;">
-        <div style="width:64px;height:64px;background:#000;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:32px;box-shadow:0 16px 48px rgba(0,0,0,0.15);">🧠</div>
-        <h1 style="font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-3px;line-height:1.05;">Your AI with<br>Perfect Memory.</h1>
-        <p style="font-size:clamp(17px,2vw,21px);color:#86868b;margin-top:20px;max-width:440px;line-height:1.5;">Chrome history. X bookmarks. GitHub repos. All recalled instantly — just ask.</p>
+        <div style="width:64px;height:64px;background:#000;border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:32px;box-shadow:0 16px 48px rgba(0,0,0,0.15);"><img src="/favicon-96x96.png" alt="Pro Mind" style="width:40px;height:40px;"></div>
+        <h1 style="font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-3px;line-height:1.05;">Your AI finally<br>remembers.</h1>
+        <p style="font-size:clamp(17px,2vw,21px);color:#86868b;margin-top:20px;max-width:440px;line-height:1.5;">Give Claude, Cursor, or any MCP client perfect memory over your browser history, X bookmarks, and GitHub repos.</p>
         <div style="margin-top:40px;display:flex;gap:16px;flex-wrap:wrap;">
           <a href="/dashboard" style="padding:16px 32px;background:#000;color:#fff;border-radius:980px;font-size:17px;font-weight:500;text-decoration:none;">Get Started — 7 Day Free Trial</a>
           <a href="https://github.com/janwilmake/promind" style="padding:16px 32px;color:#06c;border-radius:980px;font-size:17px;font-weight:500;text-decoration:none;">View on GitHub ›</a>
@@ -53,7 +61,7 @@
           <line class="flow-line" x1="100" y1="150" x2="230" y2="175" stroke="#999" stroke-width="1.5" opacity="0.4" style="animation-delay:0.3s"/>
           <line class="flow-line" x1="100" y1="240" x2="230" y2="180" stroke="#999" stroke-width="1.5" opacity="0.4" style="animation-delay:0.6s"/>
           <line class="flow-line" x1="100" y1="330" x2="230" y2="185" stroke="#999" stroke-width="1.5" opacity="0.4" style="animation-delay:0.9s"/>
-          <g transform="translate(230, 128)"><circle cx="52" cy="52" r="52" fill="#000"/><text x="52" y="66" text-anchor="middle" font-size="46">🧠</text><text x="52" y="120" text-anchor="middle" font-size="12" font-weight="600" fill="#000" font-family="-apple-system,sans-serif">Pro Mind</text></g>
+          <g transform="translate(230, 128)"><circle cx="52" cy="52" r="52" fill="#000"/><image href="/favicon-96x96.png" x="22" y="22" width="60" height="60"/><text x="52" y="120" text-anchor="middle" font-size="12" font-weight="600" fill="#000" font-family="-apple-system,sans-serif">Pro Mind</text></g>
           <line class="flow-line" x1="334" y1="180" x2="390" y2="180" stroke="#999" stroke-width="1.5" opacity="0.4" style="animation-delay:1.4s"/>
           <g transform="translate(390, 132)"><rect x="0" y="0" width="120" height="96" rx="20" fill="#000" filter="url(#shadow)"/><rect x="16" y="18" width="60" height="7" rx="3.5" fill="rgba(255,255,255,0.9)"/><rect x="16" y="32" width="42" height="7" rx="3.5" fill="rgba(255,255,255,0.5)"/><rect x="16" y="50" width="72" height="7" rx="3.5" fill="rgba(255,255,255,0.9)"/><rect x="16" y="64" width="36" height="7" rx="3.5" fill="rgba(255,255,255,0.5)"/><rect x="16" y="78" width="52" height="7" rx="3.5" fill="rgba(255,255,255,0.3)"/><text x="60" y="116" text-anchor="middle" font-size="12" font-weight="500" fill="#555" font-family="-apple-system,sans-serif">Ask Anything</text></g>
         </svg>
@@ -77,6 +85,10 @@
         <div style="font-size:16px;font-weight:600;margin-bottom:8px;">⌥ "Which of my repos uses Cloudflare Workers?"</div>
         <div style="font-size:14px;color:#86868b;line-height:1.6;">Searches your GitHub repos and starred projects — structured, instant results.</div>
       </div>
+    </div>
+    <div style="max-width:620px;margin:48px auto 0;">
+      <img src="/claude.png" alt="Pro Mind in action — Claude finding articles you didn't finish reading" style="width:100%;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.12);border:1px solid rgba(0,0,0,0.08);">
+      <p style="font-size:13px;color:#86868b;margin-top:12px;text-align:center;">Real query in Claude using Pro Mind's MCP server</p>
     </div>
   </section>
 
@@ -102,7 +114,7 @@
       </div>
       <div style="display:flex;gap:20px;align-items:flex-start;">
         <div style="width:40px;height:40px;background:#34c759;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">5</div>
-        <div><div style="font-weight:600;margin-bottom:4px;">Subscribe — $30/month</div><div style="color:#86868b;font-size:14px;">7-day free trial. Syncing activates immediately.</div></div>
+        <div><div style="font-weight:600;margin-bottom:4px;">Subscribe — $30/month</div><div style="color:#86868b;font-size:14px;">7-day free trial. Hourly X bookmark and GitHub repo syncing, unlimited browser history tracking, and instant search across all sources via MCP.</div></div>
       </div>
     </div>
   </section>

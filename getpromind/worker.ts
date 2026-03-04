@@ -190,10 +190,18 @@ function mcpToolsList() {
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Search query (optional — omit to get recent items)" },
+          query: {
+            type: "string",
+            description: "Search query (optional — omit to get recent items)"
+          },
           from: {
             type: "string",
             description: "ISO date string to search from (optional)"
+          },
+          until: {
+            type: "string",
+            description:
+              "End date in YYYY-MM-DD format, assumes 23:59:59 for that date (optional)"
           },
           source: {
             type: "string",
@@ -792,10 +800,11 @@ export default {
 
       const query = url.searchParams.get("q") || "";
       const from = url.searchParams.get("from") || "";
+      const until = url.searchParams.get("until") || "";
       const source = url.searchParams.get("source") || "all";
 
       const stub = getUserDO(env, auth.sub);
-      const results = await stub.search(query, from, source);
+      const results = await stub.search(query, from, until, source);
       return Response.json(results);
     }
 
@@ -1195,6 +1204,7 @@ export default {
               const results = await stub.search(
                 (args.query as string) || "",
                 (args.from as string) || "",
+                (args.until as string) || "",
                 (args.source as string) || "all"
               );
               return respond({
@@ -1245,7 +1255,7 @@ export default {
       return new Response(null, { status: 405, headers: mcpCorsHeaders });
     }
 
-    // ── Dashboard ──
+    // ── Dashboard (setup) ──
     if (path === "/dashboard") {
       const auth = await getAuthFromRequest(request, env);
       if (!auth) {
@@ -1258,6 +1268,23 @@ export default {
       const status = await stub.getOnboardingStatus();
 
       return new Response(renderDashboard(status, url.origin), {
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
+    }
+
+    // ── Search page ──
+    if (path === "/search") {
+      const auth = await getAuthFromRequest(request, env);
+      if (!auth) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: "/auth/x/login" }
+        });
+      }
+      const stub = getUserDO(env, auth.sub);
+      const status = await stub.getOnboardingStatus();
+
+      return new Response(renderSearchPage(status, url.origin), {
         headers: { "Content-Type": "text/html; charset=utf-8" }
       });
     }
@@ -1326,11 +1353,14 @@ function renderDashboard(status: OnboardingStatus, origin: string): string {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; background: #000; color: #fff; -webkit-font-smoothing: antialiased; }
     .container { max-width: 640px; margin: 0 auto; padding: 40px 24px; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 48px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
     .user-info { display: flex; align-items: center; gap: 12px; }
     .user-info img { width: 36px; height: 36px; border-radius: 50%; }
     .user-info a { color: #86868b; text-decoration: none; font-size: 14px; }
+    .nav { display: flex; gap: 8px; margin-bottom: 32px; }
+    .nav a { padding: 8px 16px; border-radius: 980px; font-size: 14px; font-weight: 500; text-decoration: none; color: #86868b; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+    .nav a.active { background: #fff; color: #000; border-color: #fff; }
     .steps { display: flex; flex-direction: column; gap: 16px; }
     .step { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; }
     .step.completed { border-color: rgba(52,199,89,0.3); }
@@ -1345,22 +1375,6 @@ function renderDashboard(status: OnboardingStatus, origin: string): string {
     .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
     .btn-green { background: #34c759; color: #fff; }
     .btn:hover { opacity: 0.85; }
-    .search-section { margin-top: 48px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; }
-    .search-section h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
-    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-    .search-bar input { flex: 1; padding: 10px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; }
-    .search-bar input:focus { border-color: rgba(255,255,255,0.4); }
-    .search-bar button { padding: 10px 20px; border-radius: 12px; background: #fff; color: #000; border: none; font-size: 14px; font-weight: 500; cursor: pointer; }
-    .results { max-height: 400px; overflow-y: auto; }
-    .result-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .result-source { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
-    .source-history { background: rgba(52,199,89,0.2); color: #34c759; }
-    .source-bookmarks { background: rgba(0,122,255,0.2); color: #007aff; }
-    .source-repos { background: rgba(255,149,0,0.2); color: #ff9500; }
-    .result-title { font-size: 14px; font-weight: 500; color: #fff; }
-    .result-meta { font-size: 12px; color: #86868b; margin-top: 2px; }
-    .result-title a { color: #fff; text-decoration: none; }
-    .result-title a:hover { text-decoration: underline; }
     .mcp-section { margin-top: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; }
     .mcp-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
     .mcp-section code { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; display: block; font-size: 13px; word-break: break-all; color: #86868b; }
@@ -1373,12 +1387,17 @@ function renderDashboard(status: OnboardingStatus, origin: string): string {
 <body>
   <div class="container">
     <div class="header">
-      <h1>🧠 Pro Mind</h1>
+      <h1><img src="/favicon-96x96.png" alt="Pro Mind" style="width:28px;height:28px;vertical-align:middle;margin-right:8px;">Pro Mind</h1>
       <div class="user-info">
         ${status.xUser ? `<img src="${status.xUser.profileImageUrl}" alt="">` : ""}
         <span>${status.xUser?.username || "Unknown"}</span>
         <a href="/auth/logout">Logout</a>
       </div>
+    </div>
+
+    <div class="nav">
+      <a href="/dashboard" class="active">Setup</a>
+      <a href="/search">Search</a>
     </div>
 
     <div class="steps">
@@ -1454,7 +1473,7 @@ function renderDashboard(status: OnboardingStatus, origin: string): string {
           ${check(status.subscribed)}
           <div class="step-title">Subscribe</div>
         </div>
-        <div class="step-desc">$30/month with 7-day free trial. Syncing starts after subscription.</div>
+        <div class="step-desc">$30/month with 7-day free trial. Hourly X bookmark and GitHub repo syncing, unlimited browser history tracking, and instant search across all sources via MCP.</div>
         <div class="step-action">
           ${
             !status.subscribed
@@ -1482,15 +1501,6 @@ function renderDashboard(status: OnboardingStatus, origin: string): string {
         <div class="stat-label">Repos</div>
       </div>
     </div>
-
-    <div class="search-section">
-      <h2>Search Your Memory</h2>
-      <div class="search-bar">
-        <input type="text" id="search-input" placeholder="What was that article about..." onkeydown="if(event.key==='Enter')doSearch()">
-        <button onclick="doSearch()">Search</button>
-      </div>
-      <div class="results" id="results"></div>
-    </div>
     `
         : ""
     }
@@ -1513,7 +1523,90 @@ function renderDashboard(status: OnboardingStatus, origin: string): string {
       else alert('Error creating checkout: ' + JSON.stringify(data));
     }
 
+  </script>
+</body>
+</html>`;
+}
+
+// ============================================================================
+// Search Page HTML renderer
+// ============================================================================
+
+function renderSearchPage(status: OnboardingStatus, origin: string): string {
+  const isSubscribed = status.subscribed;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro Mind — Search</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; background: #000; color: #fff; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; }
+    .container { max-width: 640px; width: 100%; margin: 0 auto; padding: 40px 24px 0; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .user-info img { width: 36px; height: 36px; border-radius: 50%; }
+    .user-info a { color: #86868b; text-decoration: none; font-size: 14px; }
+    .nav { display: flex; gap: 8px; margin-bottom: 32px; }
+    .nav a { padding: 8px 16px; border-radius: 980px; font-size: 14px; font-weight: 500; text-decoration: none; color: #86868b; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+    .nav a.active { background: #fff; color: #000; border-color: #fff; }
+    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-shrink: 0; }
+    .search-bar input { flex: 1; padding: 10px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; }
+    .search-bar input:focus { border-color: rgba(255,255,255,0.4); }
+    .search-bar button { padding: 10px 20px; border-radius: 12px; background: #fff; color: #000; border: none; font-size: 14px; font-weight: 500; cursor: pointer; }
+    .search-bar button:disabled { background: rgba(255,255,255,0.1); color: #86868b; cursor: not-allowed; }
+    .results { flex: 1; overflow-y: auto; min-height: 0; padding-bottom: 24px; }
+    .result-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .result-source { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .source-history { background: rgba(52,199,89,0.2); color: #34c759; }
+    .source-bookmarks { background: rgba(0,122,255,0.2); color: #007aff; }
+    .source-repos { background: rgba(255,149,0,0.2); color: #ff9500; }
+    .result-title { font-size: 14px; font-weight: 500; color: #fff; }
+    .result-meta { font-size: 12px; color: #86868b; margin-top: 2px; }
+    .result-title a { color: #fff; text-decoration: none; }
+    .result-title a:hover { text-decoration: underline; }
+    .result-url { font-size: 12px; color: #555; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .upgrade-notice { text-align: center; padding: 48px 24px; color: #86868b; }
+    .upgrade-notice a { color: #fff; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><img src="/favicon-96x96.png" alt="Pro Mind" style="width:28px;height:28px;vertical-align:middle;margin-right:8px;">Pro Mind</h1>
+      <div class="user-info">
+        ${status.xUser ? `<img src="${status.xUser.profileImageUrl}" alt="">` : ""}
+        <span>${status.xUser?.username || "Unknown"}</span>
+        <a href="/auth/logout">Logout</a>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a href="/dashboard">Setup</a>
+      <a href="/search" class="active">Search</a>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="youtube" onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()" ${!isSubscribed ? "disabled" : ""}>Search</button>
+    </div>
+
+    ${
+      !isSubscribed
+        ? `<div class="upgrade-notice">Subscribe to search your memory. <a href="/dashboard">Go to Setup</a> to start your free trial.</div>`
+        : ""
+    }
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
     async function doSearch() {
+      ${!isSubscribed ? "return;" : ""}
       const q = document.getElementById('search-input').value;
       if (!q.trim()) return;
       const res = await fetch('/api/search?q=' + encodeURIComponent(q));
@@ -1527,10 +1620,13 @@ function renderDashboard(status: OnboardingStatus, origin: string): string {
 
       container.innerHTML = results.map(r => {
         const sourceClass = r.source === 'history' ? 'source-history' : r.source === 'bookmarks' ? 'source-bookmarks' : 'source-repos';
+        var favicon = '';
+        try { if (r.url) { var h = new URL(r.url).hostname; favicon = '<img src="https://www.google.com/s2/favicons?domain=' + h + '&sz=32" width="16" height="16" style="vertical-align:middle;margin-right:8px;border-radius:2px;">'; } } catch(e) {}
         return '<div class="result-item">' +
           '<span class="result-source ' + sourceClass + '">' + r.source + '</span>' +
-          '<div class="result-title"><a href="' + (r.url || '#') + '" target="_blank">' + escapeHtml(r.title || r.url || r.name || 'Untitled') + '</a></div>' +
+          '<div class="result-title">' + favicon + '<a href="' + (r.url || '#') + '" target="_blank">' + escapeHtml(r.title || r.url || r.name || 'Untitled') + '</a></div>' +
           '<div class="result-meta">' + escapeHtml(r.meta || '') + '</div>' +
+          (r.url ? '<div class="result-url">' + escapeHtml(r.url) + '</div>' : '') +
           '</div>';
       }).join('');
     }
@@ -1913,17 +2009,23 @@ export class UserDO extends DurableObject<Env> {
 
   // ── Search across all sources ──
 
-  async search(query: string, from: string, source: string): Promise<any[]> {
+  async search(
+    query: string,
+    from: string,
+    until: string,
+    source: string
+  ): Promise<any[]> {
     const results: any[] = [];
     const fromTs = from ? new Date(from).getTime() : 0;
+    const untilTs = until ? new Date(until + "T23:59:59Z").getTime() : Infinity;
     const trimmed = (query || "").trim();
     const hasQuery = trimmed.length > 0;
 
     // Split query into individual words for broader matching
-    const words = trimmed
-      .split(/\s+/)
-      .filter((w) => w.length > 0);
-    const queries = hasQuery ? [trimmed, ...words.filter((w) => w !== trimmed)] : [];
+    const words = trimmed.split(/\s+/).filter((w) => w.length > 0);
+    const queries = hasQuery
+      ? [trimmed, ...words.filter((w) => w !== trimmed)]
+      : [];
     const seen = new Set<string>();
 
     if (source === "all" || source === "history") {
@@ -1933,12 +2035,13 @@ export class UserDO extends DurableObject<Env> {
           const historyRows = this.sql
             .exec(
               `SELECT url, title, description, duration, timestamp FROM history
-             WHERE (title LIKE ? COLLATE NOCASE OR url LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE) AND timestamp >= ?
+             WHERE (title LIKE ? COLLATE NOCASE OR url LIKE ? COLLATE NOCASE OR description LIKE ? COLLATE NOCASE) AND timestamp >= ? AND timestamp <= ?
              ORDER BY timestamp DESC LIMIT 50`,
               likeQuery,
               likeQuery,
               likeQuery,
-              fromTs
+              fromTs,
+              untilTs
             )
             .toArray();
 
@@ -1961,9 +2064,10 @@ export class UserDO extends DurableObject<Env> {
         const historyRows = this.sql
           .exec(
             `SELECT url, title, description, duration, timestamp FROM history
-           WHERE timestamp >= ?
+           WHERE timestamp >= ? AND timestamp <= ?
            ORDER BY timestamp DESC LIMIT 50`,
-            fromTs
+            fromTs,
+            untilTs
           )
           .toArray();
 
@@ -2001,7 +2105,7 @@ export class UserDO extends DurableObject<Env> {
             const createdAt = row.created_at
               ? new Date(row.created_at as string).getTime()
               : 0;
-            if (createdAt >= fromTs) {
+            if (createdAt >= fromTs && createdAt <= untilTs) {
               const key = `bookmarks:${row.id}`;
               if (seen.has(key)) continue;
               seen.add(key);
@@ -2064,7 +2168,7 @@ export class UserDO extends DurableObject<Env> {
             const pushedAt = row.pushed_at
               ? new Date(row.pushed_at as string).getTime()
               : 0;
-            if (pushedAt >= fromTs) {
+            if (pushedAt >= fromTs && pushedAt <= untilTs) {
               const key = `repos:${row.full_name}`;
               if (seen.has(key)) continue;
               seen.add(key);
@@ -2093,7 +2197,7 @@ export class UserDO extends DurableObject<Env> {
           const pushedAt = row.pushed_at
             ? new Date(row.pushed_at as string).getTime()
             : 0;
-          if (pushedAt >= fromTs) {
+          if (pushedAt >= fromTs && pushedAt <= untilTs) {
             const key = `repos:${row.full_name}`;
             if (seen.has(key)) continue;
             seen.add(key);
