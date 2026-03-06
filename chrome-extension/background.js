@@ -167,6 +167,12 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
     const tab = await chrome.tabs.get(tabId);
     startTracking(tabId, changeInfo.url, tab?.title);
   }
+
+  // Update title when the page finishes loading (title is now accurate)
+  if (changeInfo.title && tabId === activeTabId) {
+    currentTitle = changeInfo.title;
+    saveTrackingSession();
+  }
 });
 
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
